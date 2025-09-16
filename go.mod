@@ -1,6 +1,6 @@
 module github.com/dangLuan01/user-manager
 
-go 1.24.4
+go 1.25.1
 
 require (
 	github.com/doug-martin/goqu/v9 v9.19.0

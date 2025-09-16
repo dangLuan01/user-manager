@@ -10,5 +10,5 @@ type UserRepository interface {
 	Create(user models.User) error
 	Update(uuid string, user models.User) error
 	Delete(uuid string) error
-	FindByEmail(email string) (models.User, bool)
+	FindByEmail(email string) (models.User, error)
 }

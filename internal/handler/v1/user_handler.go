@@ -29,7 +29,7 @@ func (uh *UserHandler) GetAllUser(ctx *gin.Context)  {
 		utils.ResponseError(ctx, err)
 		return
 	}
-	utils.ResponseSuccess(ctx, http.StatusOK, v1dto.MapUsersDTO(users))
+	utils.ResponseSuccess(ctx, http.StatusOK, "Successfully" ,v1dto.MapUsersDTO(users))
 	
 }
 func (uh *UserHandler) GetUserByUUID(ctx *gin.Context)  {
@@ -48,7 +48,7 @@ func (uh *UserHandler) GetUserByUUID(ctx *gin.Context)  {
 		return
 	}
 	
-	utils.ResponseSuccess(ctx, http.StatusOK, v1dto.MapUserDTO(user))
+	utils.ResponseSuccess(ctx, http.StatusOK, "Successfully",v1dto.MapUserDTO(user))
 }
 func (uh *UserHandler) CreateUser(ctx *gin.Context) {
 
@@ -69,7 +69,7 @@ func (uh *UserHandler) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	utils.ResponseSuccess(ctx, http.StatusCreated, v1dto.MapUserDTO(createUser))
+	utils.ResponseSuccess(ctx, http.StatusCreated, "Successfully", v1dto.MapUserDTO(createUser))
 }
 func (uh *UserHandler) UpdateUser(ctx *gin.Context)  {
 	var param GetUserByUUIDParam
@@ -96,7 +96,7 @@ func (uh *UserHandler) UpdateUser(ctx *gin.Context)  {
 		return
 	}
 
-	utils.ResponseSuccess(ctx, http.StatusOK ,updateUser)
+	utils.ResponseSuccess(ctx, http.StatusOK ,"Successfully", updateUser)
 }
 func (uh *UserHandler) DeleteUser(ctx *gin.Context)  {
 	var param GetUserByUUIDParam

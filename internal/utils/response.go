@@ -9,10 +9,11 @@ import (
 type ErrorCode string
 
 const (
-	ErrCodeBadRequest ErrorCode = "BAD_REQUEST"
-	ErrCodeNotFound   ErrorCode = "NOT_FOUND"
-	ErrCodeConflict   ErrorCode = "CONFLICT"
-	ErrCodeInternal   ErrorCode = "INTERNAL_ERROR_SERVER"
+	ErrCodeBadRequest 	ErrorCode = "BAD_REQUEST"
+	ErrCodeNotFound   	ErrorCode = "NOT_FOUND"
+	ErrCodeConflict   	ErrorCode = "CONFLICT"
+	ErrCodeInternal   	ErrorCode = "INTERNAL_ERROR_SERVER"
+	ErrCodeUnauthorized ErrorCode = "UNAUTHORIZED"
 )
 
 type AppError struct {
@@ -60,9 +61,10 @@ func ResponseError(ctx *gin.Context, err error) {
 	})
 }
 
-func ResponseSuccess(ctx *gin.Context, status int, data any)  {
+func ResponseSuccess(ctx *gin.Context, status int, message string, data ...any) {
 	ctx.JSON(status, gin.H{
 		"status":"success",
+		"message": message,
 		"data": data,
 	})
 }
@@ -82,6 +84,8 @@ func httpStatusFromCode(code ErrorCode) int {
 		return http.StatusConflict
 	case ErrCodeNotFound:
 		return http.StatusNotFound
+	case ErrCodeUnauthorized:
+		return http.StatusUnauthorized
 	default :
 		return http.StatusInternalServerError
 	}

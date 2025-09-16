@@ -48,7 +48,7 @@ func (us *userService) GetUserByUUID(uuid string) (models.User, error) {
 
 func (us *userService) CreateUser(user models.User) (models.User, error) {
 	user.Email = utils.NormailizeString(user.Email)
-	if user, exist := us.repo.FindByEmail(user.Email); exist {
+	if user, err := us.repo.FindByEmail(user.Email); err != nil {
 		
 		return models.User{}, utils.NewError(
 			string(utils.ErrCodeConflict), 
@@ -56,7 +56,7 @@ func (us *userService) CreateUser(user models.User) (models.User, error) {
 		)
 	}
 	user.UUID = uuid.New().String()
-	hashPassword, err :=bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 
 		return models.User{}, utils.WrapError(
@@ -79,7 +79,7 @@ func (us *userService) CreateUser(user models.User) (models.User, error) {
 }
 func (us *userService) UpdateUser(uuid string, user models.User) (models.User, error) {
 	user.Email = utils.NormailizeString(user.Email)
-	if u, exist := us.repo.FindByEmail(user.Email); exist && u.UUID != uuid{
+	if u, err := us.repo.FindByEmail(user.Email); err != nil && u.UUID != uuid{
 		
 		return models.User{}, utils.NewError(
 			string(utils.ErrCodeConflict), 

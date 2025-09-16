@@ -4,11 +4,13 @@ import (
 	"log"
 
 	"github.com/dangLuan01/user-manager/internal/config"
+	"github.com/dangLuan01/user-manager/internal/db"
 	"github.com/dangLuan01/user-manager/internal/routes"
 	"github.com/dangLuan01/user-manager/internal/validation"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 type Module interface {
@@ -18,28 +20,49 @@ type Module interface {
 type Application struct {
 	config *config.Config
 	router *gin.Engine
+	modules []Module
 }
 
-func NewApplication(cfg *config.Config, DB *goqu.Database) *Application {
+type ModuleContext struct {
+	DB *goqu.Database
+	Redis *redis.Client
+}
+
+func NewApplication(cfg *config.Config) *Application {
 
 	if err := validation.InitValidator(); err != nil {
-		log.Fatalf("Validation init failed %v:", err)
+		log.Fatalf("⛔ Validation init failed %v:", err)
 	}
 	
 	r := gin.Default()
 
+	if err := db.InitDB(); err != nil {
+		log.Fatalf("⛔ Unable to connect to sql")
+	}
+
+	redisClient := config.NewRedisClient()
+
+	ctx := &ModuleContext{
+		DB: db.DB,
+		Redis: redisClient,
+	}
+
 	modules := []Module{
-		NewUserModule(DB),
+		NewUserModule(ctx),
+		NewAuthModule(ctx),
 	}
 
 	routes.RegisterRoute(r, getModuleRoutes(modules)...)
+
 	return &Application{
 		config: cfg,
 		router: r,
+		modules: modules,
 	}
 }
 
 func (a *Application) Run() error {
+	
 	return a.router.Run(a.config.ServerAddress)
 }
 

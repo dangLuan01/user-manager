@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/dangLuan01/user-manager/internal/utils"
 )
@@ -22,12 +21,13 @@ type Config struct {
 }
 
 func NewConfig() *Config {
+	
 	return &Config{
-		ServerAddress: fmt.Sprintf(":%s", os.Getenv("SERVER_PORT")),
-		DB: DatabaseConfig{
+		ServerAddress: fmt.Sprintf(":%s", utils.GetEnv("PORT", "8080")),
+		DB: DatabaseConfig {
 			Host: utils.GetEnv("DB_HOST","localhost"),
 			Port: utils.GetEnv("DB_PORT","3306"),
-			User: utils.GetEnv("DB_USER","root"),
+			User: utils.GetEnv("DB_USER",""),
 			Password: utils.GetEnv("DB_PASSWORD",""),
 			DBName: utils.GetEnv("DB_DBNAME","mysql"),
 			SSLMode: utils.GetEnv("DB_SSLMODE","disable"),

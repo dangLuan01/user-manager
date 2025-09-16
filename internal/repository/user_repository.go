@@ -2,7 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"log"
 	"slices"
 
 	"github.com/dangLuan01/user-manager/internal/models"
@@ -34,7 +33,7 @@ func (ur *SqlUserRepository) FindAll() ([]models.User, error){
 	)
 	var users []models.User
 	if err := ds.ScanStructs(&users); err != nil {
-		return nil, fmt.Errorf("Faile get all user:%v", err)
+		return nil, fmt.Errorf("faile get all user:%v", err)
 	}
 
 	return users, nil
@@ -66,7 +65,7 @@ func (ur *SqlUserRepository) FindBYUUID(uuid string) (models.User, bool) {
 func (ur *SqlUserRepository) Create(user models.User) error {
 	insertUser := ur.db.Insert("users").Rows(user).Executor()
 	if _, err := insertUser.Exec(); err != nil {
-       return fmt.Errorf("Faile insert rows user")
+       return fmt.Errorf("faile insert rows user")
 	}
 
 	return nil
@@ -79,7 +78,7 @@ func (ur *SqlUserRepository) Update(uuid string, user models.User) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("User not found")
+	return fmt.Errorf("user not found")
 }
 func (ur *SqlUserRepository) Delete(uuid string) error {
 
@@ -90,23 +89,23 @@ func (ur *SqlUserRepository) Delete(uuid string) error {
 		}
 	}
 
-	return fmt.Errorf("User not found")
+	return fmt.Errorf("user not found")
 }
-func (ur *SqlUserRepository) FindByEmail(email string) (models.User, bool) {
+func (ur *SqlUserRepository) FindByEmail(email string) (models.User, error) {
 	
 	ds := ur.db.From(goqu.T("users")).Where(
 		goqu.C("email").Eq(email),
 	).Limit(1)
+	
     var user models.User
     found, err := ds.ScanStruct(&user)
 	if err != nil {
-		log.Println(err)
-		return models.User{}, false
+		return models.User{}, err
 	}
 	
 	if found {
-		return user, true
+		return user, nil
 	}
 
-	return models.User{}, false
+	return models.User{}, err
 }

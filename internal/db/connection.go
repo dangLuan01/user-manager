@@ -17,15 +17,13 @@ import (
 var DB *goqu.Database
 
 func InitDB() error {
+	var err error
 
 	connStr := config.NewConfig().DNS()
-	var err error
-    //DB, err = sql.Open("mysql", connStr)
 	sqlDB, err := sql.Open("mysql", connStr)
     if err != nil {
         log.Fatal(err)
     }
-	//defer sqlDB.Close()
 
 	sqlDB.SetMaxIdleConns(3)
 	sqlDB.SetMaxOpenConns(30)
@@ -41,7 +39,7 @@ func InitDB() error {
 	}
 	DB = goqu.New("mysql", sqlDB)
 
-	log.Println("Connected")
+	log.Println("✅ Database connected!")
 
 	return nil
 }

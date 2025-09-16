@@ -6,16 +6,15 @@ import (
 	"github.com/dangLuan01/user-manager/internal/routes"
 	v1routes "github.com/dangLuan01/user-manager/internal/routes/v1"
 	v1service "github.com/dangLuan01/user-manager/internal/service/v1"
-	"github.com/doug-martin/goqu/v9"
 )
 
 type UserModule struct {
 	routes routes.Route
 }
 
-func NewUserModule(DB *goqu.Database) *UserModule {
+func NewUserModule(ctx *ModuleContext) *UserModule {
 
-	userRepo := repository.NewSqlUserRepository(DB)
+	userRepo := repository.NewSqlUserRepository(ctx.DB)
 	userService := v1service.NewUserService(userRepo)
 	UserHandler := v1handler.NewUserHandler(userService)
 	userRoutes := v1routes.NewUserRoutes(UserHandler)
