@@ -7,6 +7,8 @@ import (
 	"github.com/dangLuan01/user-manager/internal/db"
 	"github.com/dangLuan01/user-manager/internal/routes"
 	"github.com/dangLuan01/user-manager/internal/validation"
+	"github.com/dangLuan01/user-manager/pkg/auth"
+	"github.com/dangLuan01/user-manager/pkg/cache"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -41,7 +43,9 @@ func NewApplication(cfg *config.Config) *Application {
 	}
 
 	redisClient := config.NewRedisClient()
-
+	cacheRedisService := cache.NewRedisCacheService(redisClient)
+	tokenService := auth.NewJWTService(cacheRedisService)
+	
 	ctx := &ModuleContext{
 		DB: db.DB,
 		Redis: redisClient,
@@ -49,10 +53,10 @@ func NewApplication(cfg *config.Config) *Application {
 
 	modules := []Module{
 		NewUserModule(ctx),
-		NewAuthModule(ctx),
+		NewAuthModule(ctx, tokenService),
 	}
 
-	routes.RegisterRoute(r, getModuleRoutes(modules)...)
+	routes.RegisterRoute(r, tokenService ,getModuleRoutes(modules)...)
 
 	return &Application{
 		config: cfg,

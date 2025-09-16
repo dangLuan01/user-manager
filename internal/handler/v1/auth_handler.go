@@ -1,6 +1,8 @@
 package v1handler
 
 import (
+	"net/http"
+
 	v1dto "github.com/dangLuan01/user-manager/internal/dto/v1"
 	v1service "github.com/dangLuan01/user-manager/internal/service/v1"
 	"github.com/dangLuan01/user-manager/internal/utils"
@@ -26,10 +28,19 @@ func (ah *AuthHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	if err := ah.authService.Login(ctx, input.Email, input.Password); err != nil {
+	accessToken, refreshToken, expiresIn, err := ah.authService.Login(ctx, input.Email, input.Password)
+	if err != nil {
 		utils.ResponseError(ctx, err)
 		return
 	}
+
+	response := v1dto.LoginResponse{
+		AccessToken: 	accessToken,
+		RefreshToken: 	refreshToken,
+		ExpiresIn: 		expiresIn,
+	}
+
+	utils.ResponseSuccess(ctx, http.StatusOK, "Login successfully!", response)
 }
 
 func (ah *AuthHandler) Logout(ctx *gin.Context) {

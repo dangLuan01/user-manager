@@ -23,7 +23,6 @@ func NewUserHandler(service v1service.UserService) *UserHandler {
 	}
 }
 func (uh *UserHandler) GetAllUser(ctx *gin.Context)  {
-
 	users, err := uh.service.GetAllUser()
 	if err != nil {
 		utils.ResponseError(ctx, err)
