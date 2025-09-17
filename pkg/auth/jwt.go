@@ -14,7 +14,7 @@ import (
 )
 
 type JWTService struct {
-	cache *cache.RedisCacheService
+	cache cache.RedisCacheService
 }
 
 type Claim struct {
@@ -39,11 +39,11 @@ var (
 	jwtEncryptKey = []byte(utils.GetEnv("JWT_ENCRYPT_KEY","12345678901234567890123456789012"))
 )
 const (
-	AccessTokenTTL = 15 * time.Second
+	AccessTokenTTL = 15 * time.Minute
 	RefreshTokenTTL = 7 * 24 * time.Hour
 )
 
-func NewJWTService(cache *cache.RedisCacheService) TokenService {
+func NewJWTService(cache cache.RedisCacheService) TokenService {
 	return &JWTService{
 		cache: cache,
 	}

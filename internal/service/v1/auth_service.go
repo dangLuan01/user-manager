@@ -1,9 +1,13 @@
 package v1service
 
 import (
+	"strings"
+	"time"
+
 	"github.com/dangLuan01/user-manager/internal/repository"
 	"github.com/dangLuan01/user-manager/internal/utils"
 	"github.com/dangLuan01/user-manager/pkg/auth"
+	"github.com/dangLuan01/user-manager/pkg/cache"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -11,12 +15,14 @@ import (
 type authService struct {
 	userRepo repository.UserRepository
 	tokenService auth.TokenService
+	cache cache.RedisCacheService
 }
 
-func NewAuthService(repo repository.UserRepository, tokenService auth.TokenService) *authService {
+func NewAuthService(repo repository.UserRepository, tokenService auth.TokenService, cache cache.RedisCacheService) *authService {
 	return &authService{
 		userRepo: repo,
 		tokenService: tokenService,
+		cache: cache,
 	}
 }
 
@@ -53,9 +59,40 @@ func (as *authService) Login(ctx *gin.Context, email, password string) (string, 
 	return  accessToken, refreshToken.Token, int(auth.AccessTokenTTL.Seconds()), nil
 }
 
-func (as *authService) Logout(ctx *gin.Context) error {
+func (as *authService) Logout(ctx *gin.Context, refreshTokenString string) error {
+	authHeder := ctx.GetHeader("Authorization")
+	if authHeder == "" || !strings.HasPrefix(authHeder, "Bearer ") {
+		
+		return utils.NewError(string(utils.ErrCodeUnauthorized), "Missing Authorization header")
+	}
+	
+	accessToken := strings.TrimPrefix(authHeder, "Bearer ")
+	
+	_, claims, err := as.tokenService.ParseToken(accessToken)
+	if err != nil {
+		
+		return utils.NewError(string(utils.ErrCodeUnauthorized), "Invalid access token")
+	}
 
-	panic("")
+	if jti, ok := claims["jti"].(string); ok {
+		expUnix := claims["exp"].(float64)
+		exp := time.Unix(int64(expUnix), 0)
+		key := "blacklist:" + jti
+		ttl := time.Until(exp)
+		as.cache.Set(key,"revoked", ttl)
+	}
+
+	token, err := as.tokenService.ValidaRefreshToken(refreshTokenString)
+	if err != nil {
+		return utils.NewError(string(utils.ErrCodeUnauthorized),"Refresh token is invalid or revoked.")
+	}
+
+	if err := as.tokenService.RevokeRefreshToken(token.Token); err != nil {
+		return utils.WrapError(string(utils.ErrCodeBadRequest), "Cannot to revoke refresh token", err)
+	}
+
+	return  nil
+	
 }
 
 func (as *authService) RefreshToken(ctx *gin.Context, refreshTokenString string) (string, string, int, error) {
