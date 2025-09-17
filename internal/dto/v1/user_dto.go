@@ -2,10 +2,11 @@ package v1dto
 
 import (
 	"github.com/dangLuan01/user-manager/internal/models"
+	"github.com/google/uuid"
 )
 
 type UserDTO struct {
-	UUID   string `json:"uuid"`
+	UUID   uuid.UUID `json:"uuid"`
 	Name   string `json:"name"`
 	Email  string `json:"email"`
 	Age    int16 `json:"age"`
@@ -13,7 +14,7 @@ type UserDTO struct {
 	Status string `json:"status"`
 }
 type CreateUserInput struct {
-	UUID     string `json:"uuid"`
+	UUID   uuid.UUID `json:"uuid"`
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
@@ -23,7 +24,7 @@ type CreateUserInput struct {
 }
 
 type UpdateUserInput struct {
-	UUID     string `json:"uuid"`
+	UUID   uuid.UUID `json:"uuid"`
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"omitempty,min=8"`

@@ -6,6 +6,7 @@ import (
 
 	"github.com/dangLuan01/user-manager/internal/models"
 	"github.com/doug-martin/goqu/v9"
+	"github.com/google/uuid"
 )
 
 type SqlUserRepository struct {
@@ -39,7 +40,7 @@ func (ur *SqlUserRepository) FindAll() ([]models.User, error){
 	return users, nil
 }
 
-func (ur *SqlUserRepository) FindBYUUID(uuid string) (models.User, bool) {
+func (ur *SqlUserRepository) FindBYUUID(uuid uuid.UUID) (models.User, error) {
 	ds := ur.db.From(goqu.T("users")).
 	Where(
 		goqu.C("uuid").Eq(uuid),
@@ -56,10 +57,10 @@ func (ur *SqlUserRepository) FindBYUUID(uuid string) (models.User, bool) {
 
 	found, err := ds.ScanStruct(&user)
 	if err != nil || !found {
-		return  models.User{}, false
+		return  models.User{}, err
 	}
 
-	return user, true
+	return user, err
 }
 
 func (ur *SqlUserRepository) Create(user models.User) error {
@@ -71,7 +72,7 @@ func (ur *SqlUserRepository) Create(user models.User) error {
 	return nil
 }
 
-func (ur *SqlUserRepository) Update(uuid string, user models.User) error {
+func (ur *SqlUserRepository) Update(uuid uuid.UUID, user models.User) error {
 	for i, u := range ur.users{
 		if u.UUID == uuid {
 			ur.users[i] = user
@@ -80,7 +81,7 @@ func (ur *SqlUserRepository) Update(uuid string, user models.User) error {
 	}
 	return fmt.Errorf("user not found")
 }
-func (ur *SqlUserRepository) Delete(uuid string) error {
+func (ur *SqlUserRepository) Delete(uuid uuid.UUID) error {
 
 	for i, u := range ur.users{
 		if u.UUID == uuid {

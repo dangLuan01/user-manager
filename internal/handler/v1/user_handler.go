@@ -5,6 +5,7 @@ import (
 
 	v1dto "github.com/dangLuan01/user-manager/internal/dto/v1"
 	v1service "github.com/dangLuan01/user-manager/internal/service/v1"
+	"github.com/google/uuid"
 
 	"github.com/dangLuan01/user-manager/internal/utils"
 	"github.com/dangLuan01/user-manager/internal/validation"
@@ -15,7 +16,7 @@ type UserHandler struct {
 	service v1service.UserService
 }
 type GetUserByUUIDParam struct{
-	Uuid string `uri:"uuid" binding:"uuid"`
+	Uuid uuid.UUID `uri:"uuid" binding:"uuid"`
 }
 func NewUserHandler(service v1service.UserService) *UserHandler {
 	return &UserHandler{

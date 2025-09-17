@@ -23,25 +23,25 @@ func NewAuthService(repo repository.UserRepository, tokenService auth.TokenServi
 func (as *authService) Login(ctx *gin.Context, email, password string) (string, string, int, error) {
 
 	email = utils.NormailizeString(email)
-	found, err := as.userRepo.FindByEmail(email)
+	user, err := as.userRepo.FindByEmail(email)
 
 	if err != nil {
 
 		return "", "", 0, utils.NewError(string(utils.ErrCodeUnauthorized), "Invalid email or password")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(found.Password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 
 		return "", "", 0, utils.NewError(string(utils.ErrCodeUnauthorized), "Invalid email or password")
 	}
 
-	accessToken, err := as.tokenService.GenerateAccessToken(found)
+	accessToken, err := as.tokenService.GenerateAccessToken(user)
 	if err != nil {
 		return "", "", 0, utils.WrapError(string(utils.ErrCodeBadRequest), "Unable to create access token", err)
 	}
 
 
-	refreshToken, err := as.tokenService.GenerateRefreshToken(found)
+	refreshToken, err := as.tokenService.GenerateRefreshToken(user)
 	if err != nil {
 		return "", "", 0, utils.WrapError(string(utils.ErrCodeBadRequest), "Unable to create refresh token", err)
 	}
@@ -56,4 +56,37 @@ func (as *authService) Login(ctx *gin.Context, email, password string) (string, 
 func (as *authService) Logout(ctx *gin.Context) error {
 
 	panic("")
+}
+
+func (as *authService) RefreshToken(ctx *gin.Context, refreshTokenString string) (string, string, int, error) {
+
+	token, err := as.tokenService.ValidaRefreshToken(refreshTokenString)
+	if err != nil {
+		return "","", 0, utils.NewError(string(utils.ErrCodeUnauthorized),"Refresh token is invalid or revoked.")
+	}
+
+	user, err := as.userRepo.FindBYUUID(token.UserUUID)
+	if err != nil {
+		return "","", 0, utils.NewError(string(utils.ErrCodeUnauthorized),"User not found.")
+	}
+
+	accessToken, err := as.tokenService.GenerateAccessToken(user)
+	if err != nil {
+		return "", "", 0, utils.WrapError(string(utils.ErrCodeBadRequest), "Unable to create access token", err)
+	}
+
+	refreshToken, err := as.tokenService.GenerateRefreshToken(user)
+	if err != nil {
+		return "", "", 0, utils.WrapError(string(utils.ErrCodeBadRequest), "Unable to create refresh token", err)
+	}
+
+	if err := as.tokenService.RevokeRefreshToken(refreshTokenString); err != nil {
+		return "", "", 0, utils.WrapError(string(utils.ErrCodeBadRequest), "Cannot to revoke refresh token", err)
+	}
+
+	if err := as.tokenService.StoreRefreshToken(refreshToken); err != nil {
+		return "", "", 0, utils.WrapError(string(utils.ErrCodeBadRequest), "Cannot save refresh token", err)
+	}
+
+	return  accessToken, refreshToken.Token, int(auth.AccessTokenTTL.Seconds()), nil
 }

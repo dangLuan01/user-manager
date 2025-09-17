@@ -35,10 +35,10 @@ func (us *userService) GetAllUser()  ([]models.User, error) {
 	return users, nil
 }
 
-func (us *userService) GetUserByUUID(uuid string) (models.User, error) {
+func (us *userService) GetUserByUUID(uuid uuid.UUID) (models.User, error) {
 	
-	user, found := us.repo.FindBYUUID(uuid);
-	if !found {
+	user, err := us.repo.FindBYUUID(uuid);
+	if err != nil {
 
 		return models.User{}, utils.NewError(string(utils.ErrCodeNotFound), "No user")
 	}
@@ -55,7 +55,7 @@ func (us *userService) CreateUser(user models.User) (models.User, error) {
 			fmt.Sprintf("Email: %v already existed.", user.Email),
 		)
 	}
-	user.UUID = uuid.New().String()
+	user.UUID = uuid.New()
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 
@@ -77,7 +77,7 @@ func (us *userService) CreateUser(user models.User) (models.User, error) {
 	
 	return user, nil
 }
-func (us *userService) UpdateUser(uuid string, user models.User) (models.User, error) {
+func (us *userService) UpdateUser(uuid uuid.UUID, user models.User) (models.User, error) {
 	user.Email = utils.NormailizeString(user.Email)
 	if u, err := us.repo.FindByEmail(user.Email); err != nil && u.UUID != uuid{
 		
@@ -86,8 +86,8 @@ func (us *userService) UpdateUser(uuid string, user models.User) (models.User, e
 			fmt.Sprintf("Email: %v already existed.", u.Email),
 		)
 	}
-	currencyUser, found := us.repo.FindBYUUID(uuid)
-	if !found {
+	currencyUser, err := us.repo.FindBYUUID(uuid)
+	if err != nil {
 		return models.User{}, utils.NewError(string(utils.ErrCodeNotFound), "user not found")
 	}
 	
@@ -119,7 +119,7 @@ func (us *userService) UpdateUser(uuid string, user models.User) (models.User, e
 	return currencyUser, nil
 }
 
-func (us *userService) DeleteUser(uuid string) error {
+func (us *userService) DeleteUser(uuid uuid.UUID) error {
 	if err := us.repo.Delete(uuid); err != nil {
 		return utils.WrapError(string(utils.ErrCodeInternal), "Faile delete user", err)
 	}

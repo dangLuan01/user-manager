@@ -22,14 +22,14 @@ type Claim struct {
 }
 
 type EncryptedPayload struct {
-	UserUUID 	string `json:"user_uuid"`
+	UserUUID 	uuid.UUID `json:"user_uuid"`
 	Email 		string `json:"email"`
 	Role 		int8 `json:"role"`
 }
 
 type RefreshToken struct {
 	Token 		string `json:"token"`
-	UserUUID 	string `json:"user_uuid"`
+	UserUUID 	uuid.UUID `json:"user_uuid"`
 	ExpiresAt 	time.Time `json:"expires_at"`
 	Revoked 	bool `json:"revoked"`
 }
@@ -39,7 +39,7 @@ var (
 	jwtEncryptKey = []byte(utils.GetEnv("JWT_ENCRYPT_KEY","12345678901234567890123456789012"))
 )
 const (
-	AccessTokenTTL = 15 * time.Minute
+	AccessTokenTTL = 15 * time.Second
 	RefreshTokenTTL = 7 * 24 * time.Hour
 )
 
@@ -141,4 +141,28 @@ func (js *JWTService) GenerateRefreshToken(user models.User) (RefreshToken, erro
 func (js *JWTService) StoreRefreshToken(token RefreshToken) error {
 	cacheKey := "refresh_token:" + token.Token
 	return js.cache.Set(cacheKey, token, RefreshTokenTTL)
+}
+
+func (js *JWTService) ValidaRefreshToken(token string) (RefreshToken, error) {
+	cacheKey := "refresh_token:" + token
+
+	var refreshToken RefreshToken
+	if err := js.cache.Get(cacheKey, &refreshToken); err != nil || refreshToken.Revoked || refreshToken.ExpiresAt.Before(time.Now()) {
+		return RefreshToken{}, utils.WrapError(string(utils.ErrCodeInternal), "Cannot get refresh token", err)
+	}
+
+	return refreshToken, nil
+}
+
+func (js *JWTService) RevokeRefreshToken(token string) error {
+	cacheKey := "refresh_token:" + token
+
+	var refreshToken RefreshToken
+	if err := js.cache.Get(cacheKey, &refreshToken); err != nil {
+		return utils.WrapError(string(utils.ErrCodeInternal), "Cannot get refresh token", err)
+	}
+
+	refreshToken.Revoked = true
+
+	return js.cache.Set(cacheKey, refreshToken, time.Until(refreshToken.ExpiresAt))
 }
