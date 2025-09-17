@@ -9,11 +9,12 @@ import (
 type ErrorCode string
 
 const (
-	ErrCodeBadRequest 	ErrorCode = "BAD_REQUEST"
-	ErrCodeNotFound   	ErrorCode = "NOT_FOUND"
-	ErrCodeConflict   	ErrorCode = "CONFLICT"
-	ErrCodeInternal   	ErrorCode = "INTERNAL_ERROR_SERVER"
-	ErrCodeUnauthorized ErrorCode = "UNAUTHORIZED"
+	ErrCodeBadRequest 		ErrorCode = "BAD_REQUEST"
+	ErrCodeNotFound   		ErrorCode = "NOT_FOUND"
+	ErrCodeConflict   		ErrorCode = "CONFLICT"
+	ErrCodeInternal   		ErrorCode = "INTERNAL_ERROR_SERVER"
+	ErrCodeUnauthorized 	ErrorCode = "UNAUTHORIZED"
+	ErrCodeTooManyRequest 	ErrorCode = "TOO_MANY_REQUEST"
 )
 
 type AppError struct {
@@ -86,6 +87,8 @@ func httpStatusFromCode(code ErrorCode) int {
 		return http.StatusNotFound
 	case ErrCodeUnauthorized:
 		return http.StatusUnauthorized
+	case ErrCodeTooManyRequest:
+		return http.StatusTooManyRequests
 	default :
 		return http.StatusInternalServerError
 	}
