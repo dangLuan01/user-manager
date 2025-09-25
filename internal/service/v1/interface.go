@@ -18,4 +18,6 @@ type AuthService interface {
 	Login(ctx *gin.Context, email, password string) (string, string, int, error)
 	Logout(ctx *gin.Context, refreshTokenString string) error
 	RefreshToken(ctx *gin.Context, token string) (string, string, int, error)
+	RequestForgotPassword(ctx *gin.Context, email string) (string, error)
+	RequestResetPassword(ctx *gin.Context, token, password string) error
 }

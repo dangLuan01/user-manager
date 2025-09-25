@@ -81,6 +81,7 @@ func (ur *SqlUserRepository) Update(uuid uuid.UUID, user models.User) error {
 	}
 	return fmt.Errorf("user not found")
 }
+
 func (ur *SqlUserRepository) Delete(uuid uuid.UUID) error {
 
 	for i, u := range ur.users{
@@ -109,4 +110,18 @@ func (ur *SqlUserRepository) FindByEmail(email string) (models.User, error) {
 	}
 
 	return models.User{}, err
+}
+
+func (ur *SqlUserRepository) UpdatePassword(uuid uuid.UUID, password string) error {
+
+	_, err := ur.db.Update(goqu.T("users")).Set(goqu.Record{"password": password}).
+	Where(
+		goqu.C("uuid").Eq(uuid),
+	).Executor().Exec()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

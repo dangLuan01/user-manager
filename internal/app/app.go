@@ -9,6 +9,7 @@ import (
 	"github.com/dangLuan01/user-manager/internal/validation"
 	"github.com/dangLuan01/user-manager/pkg/auth"
 	"github.com/dangLuan01/user-manager/pkg/cache"
+	"github.com/dangLuan01/user-manager/pkg/mail"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -45,7 +46,17 @@ func NewApplication(cfg *config.Config) *Application {
 	redisClient := config.NewRedisClient()
 	cacheRedisService := cache.NewRedisCacheService(redisClient)
 	tokenService := auth.NewJWTService(cacheRedisService)
-	
+
+	factory, err := mail.NewProviderFactory(mail.ProviderMailtrap)
+	if err != nil {
+		log.Fatalf("⛔ Unable to init mail:%s", err)
+	}
+
+	mailService, err := mail.NewMailService(cfg, factory)
+	if err != nil {
+		log.Fatalf("⛔ Unable to init mail service:%s", err)
+	}
+
 	ctx := &ModuleContext{
 		DB: db.DB,
 		Redis: redisClient,
@@ -53,7 +64,7 @@ func NewApplication(cfg *config.Config) *Application {
 
 	modules := []Module{
 		NewUserModule(ctx),
-		NewAuthModule(ctx, tokenService, cacheRedisService),
+		NewAuthModule(ctx, tokenService, cacheRedisService, mailService),
 	}
 
 	routes.RegisterRoute(r, tokenService, cacheRedisService ,getModuleRoutes(modules)...)

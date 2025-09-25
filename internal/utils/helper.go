@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"os"
 	"strconv"
 )
@@ -25,4 +27,14 @@ func GetIntEnv(key string, defaultValue int) int {
 	}
 	
 	return intValue
+}
+
+func GenerateRandomString(lenght int) (string, error) {
+	bytes := make([]byte, lenght)
+
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(bytes), nil
 }

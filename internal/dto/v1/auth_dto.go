@@ -14,3 +14,12 @@ type LoginResponse struct {
 type RefreshTokenInput struct {
 	RefreshToken 	string `json:"refresh_token"`
 }
+
+type RequestPasswordInput struct {
+	Email    string `json:"email" binding:"required,email"`
+}
+
+type RequestResetInput struct {
+	Token    string `json:"token" binding:"required"`
+	Password string `json:"password" binding:"required,min=8"`
+}

@@ -39,8 +39,8 @@ var (
 	jwtEncryptKey = []byte(utils.GetEnv("JWT_ENCRYPT_KEY","12345678901234567890123456789012"))
 )
 const (
-	AccessTokenTTL = 15 * time.Minute
-	RefreshTokenTTL = 7 * 24 * time.Hour
+	AccessTokenTTL = 30 * time.Minute
+	RefreshTokenTTL = 2 * 24 * time.Hour
 )
 
 func NewJWTService(cache cache.RedisCacheService) TokenService {

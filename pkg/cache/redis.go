@@ -52,3 +52,12 @@ func (cs *redisCacheService) Exits(key string) (bool, error) {
 
 	return count > 0, nil
 }
+
+func (cs *redisCacheService) Clear(key string) error {
+
+	if _, err := cs.rdb.Del(cs.ctx, key).Result(); err != nil && err == redis.Nil {
+		return err
+	}
+
+	return nil
+}

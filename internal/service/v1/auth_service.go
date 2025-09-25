@@ -1,6 +1,8 @@
 package v1service
 
 import (
+	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -9,7 +11,10 @@ import (
 	"github.com/dangLuan01/user-manager/internal/utils"
 	"github.com/dangLuan01/user-manager/pkg/auth"
 	"github.com/dangLuan01/user-manager/pkg/cache"
+	"github.com/dangLuan01/user-manager/pkg/mail"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/time/rate"
 )
@@ -30,13 +35,15 @@ type authService struct {
 	userRepo repository.UserRepository
 	tokenService auth.TokenService
 	cache cache.RedisCacheService
+	mailService mail.EmailProviderService
 }
 
-func NewAuthService(repo repository.UserRepository, tokenService auth.TokenService, cache cache.RedisCacheService) *authService {
+func NewAuthService(repo repository.UserRepository, tokenService auth.TokenService, cacheService cache.RedisCacheService, mailService mail.EmailProviderService) *authService {
 	return &authService{
 		userRepo: repo,
 		tokenService: tokenService,
-		cache: cache,
+		cache: cacheService,
+		mailService: mailService,
 	}
 }
 
@@ -194,4 +201,89 @@ func (as *authService) RefreshToken(ctx *gin.Context, refreshTokenString string)
 	}
 
 	return  accessToken, refreshToken.Token, int(auth.AccessTokenTTL.Seconds()), nil
+}
+
+func (as *authService) RequestForgotPassword(ctx *gin.Context, email string) (string, error) {
+
+	rateLimitKey := fmt.Sprintf("reset:ratelimit:%s", email)
+
+	if exists, err := as.cache.Exits(rateLimitKey); exists && err == nil {
+		return "", utils.NewError(string(utils.ErrCodeTooManyRequest), "Wait before requesting anorther password reset")
+	}
+
+	email = utils.NormailizeString(email)
+	user, err := as.userRepo.FindByEmail(email)
+
+	if err != nil || user.Email == "" {
+		return "", utils.NewError(string(utils.ErrCodeNotFound), "Email not found")
+	}
+
+	token, err := utils.GenerateRandomString(32)
+	if err != nil {
+		return "", utils.NewError(string(utils.ErrCodeInternal), "Failed to generate reset token")
+	}
+
+	err = as.cache.Set("reset:" + token, user.UUID.String(), time.Hour)
+	if err != nil {
+		return "", utils.NewError(string(utils.ErrCodeInternal), "Failed to store reset token")
+	}
+
+	err = as.cache.Set(rateLimitKey, "1", time.Minute)
+	if err != nil {
+		return "", utils.NewError(string(utils.ErrCodeInternal), "Failed to store rate limit reset password")
+	}
+
+	resetLink := fmt.Sprintf("https://yourdomain.com/reset-password?token=%s", token)
+	mailContent := &mail.Email{
+		To: []mail.Address{
+			{Email: email},
+		},
+		Subject: "Password reset request",
+		Text: fmt.Sprintf("Hi %s, \n\n You requested to reset your password. Click the link below to reset it:\n%s\n\n The link will exprie in a hours", user.Name, resetLink),
+	}
+
+	if err := as.mailService.SendMail(ctx, mailContent); err != nil {
+		log.Println(err)
+		return "", utils.NewError(string(utils.ErrCodeInternal), "Failed to send email.")
+		
+	}
+	return resetLink, nil
+}
+
+func (as *authService)RequestResetPassword(ctx *gin.Context, token, password string) error {
+
+	var userUUIDStr string
+	err := as.cache.Get("reset:" + token, &userUUIDStr)
+	log.Println(userUUIDStr)
+	if err == redis.Nil || userUUIDStr == "" {
+		return utils.NewError(string(utils.ErrCodeInternal), "Invalid or expried token")
+	}
+
+	if err != nil {
+		return utils.NewError(string(utils.ErrCodeInternal), "Failed to get reset token")
+	}
+
+	userUUID, err := uuid.Parse(userUUIDStr)
+	if err != nil {
+		return utils.WrapError(string(utils.ErrCodeInternal),"Uuid is invalid", err)
+	}
+
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return utils.WrapError(
+			string(utils.ErrCodeInternal), 
+			"Faile hash password", 
+			err,
+		)
+	}
+
+	if err := as.userRepo.UpdatePassword(userUUID, string(hashPassword)); err != nil {
+		return utils.NewError(string(utils.ErrCodeInternal), "Unable update new password")
+	}
+
+	if err := as.cache.Clear("reset:" + token); err != nil {
+		return utils.NewError(string(utils.ErrCodeInternal), "Failed to revoked token")
+	}
+
+	return nil
 }

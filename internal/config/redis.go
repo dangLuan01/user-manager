@@ -20,7 +20,7 @@ type RedisConfig struct {
 
 func NewRedisClient() *redis.Client {
 	cfg := RedisConfig{
-		Addr:     utils.GetEnv("REDIS_ADDR", "localhost"),
+		Addr:     utils.GetEnv("REDIS_HOST", "localhost"),
 		UserName: utils.GetEnv("REDIS_USER", ""),
 		Port:     utils.GetIntEnv("REDIS_PORT", 6379),
 		Password: utils.GetEnv("REDIS_PASSWORD", ""),

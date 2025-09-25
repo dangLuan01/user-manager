@@ -8,16 +8,17 @@ import (
 	v1service "github.com/dangLuan01/user-manager/internal/service/v1"
 	"github.com/dangLuan01/user-manager/pkg/auth"
 	"github.com/dangLuan01/user-manager/pkg/cache"
+	"github.com/dangLuan01/user-manager/pkg/mail"
 )
 
 type AuthModule struct {
 	routes routes.Route
 }
 
-func NewAuthModule(ctx *ModuleContext, tokenService auth.TokenService, cache cache.RedisCacheService) *AuthModule {
+func NewAuthModule(ctx *ModuleContext, tokenService auth.TokenService, cacheService cache.RedisCacheService, mailService mail.EmailProviderService) *AuthModule {
 
 	userRepo := repository.NewSqlUserRepository(ctx.DB)
-	authService := v1service.NewAuthService(userRepo, tokenService, cache)
+	authService := v1service.NewAuthService(userRepo, tokenService, cacheService, mailService)
 	authHandler := v1handler.NewAuthHandler(authService) 
 	authRoutes := v1routes.NewAuthRoutes(authHandler)
 
