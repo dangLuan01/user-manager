@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/dangLuan01/user-manager/internal/app"
 	"github.com/dangLuan01/user-manager/internal/config"
 )
@@ -11,9 +13,12 @@ func main() {
 	
 	cfg := config.NewConfig()
 	
-	application := app.NewApplication(cfg)
+	application, err := app.NewApplication(cfg)
+	if err != nil {
+		log.Fatalf("Error start app:%s", err)
+	}
 
 	if err := application.Run(); err != nil {
-		panic(err)
+		log.Fatalf("Error run app:%s", err)
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/dangLuan01/user-manager/pkg/auth"
 	"github.com/dangLuan01/user-manager/pkg/cache"
 	"github.com/dangLuan01/user-manager/pkg/mail"
+	"github.com/dangLuan01/user-manager/pkg/rabbitmq"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -36,14 +37,16 @@ type authService struct {
 	tokenService auth.TokenService
 	cache cache.RedisCacheService
 	mailService mail.EmailProviderService
+	rabbitmqService rabbitmq.RabbitMQService
 }
 
-func NewAuthService(repo repository.UserRepository, tokenService auth.TokenService, cacheService cache.RedisCacheService, mailService mail.EmailProviderService) *authService {
+func NewAuthService(repo repository.UserRepository, tokenService auth.TokenService, cacheService cache.RedisCacheService, mailService mail.EmailProviderService, rabbitmqService rabbitmq.RabbitMQService) *authService {
 	return &authService{
 		userRepo: repo,
 		tokenService: tokenService,
 		cache: cacheService,
 		mailService: mailService,
+		rabbitmqService: rabbitmqService,
 	}
 }
 
@@ -242,12 +245,16 @@ func (as *authService) RequestForgotPassword(ctx *gin.Context, email string) (st
 		Text: fmt.Sprintf("Hi %s, \n\n You requested to reset your password. Click the link below to reset it:\n%s\n\n The link will exprie in a hours", user.Name, resetLink),
 	}
 
-	if err := as.mailService.SendMail(ctx, mailContent); err != nil {
-		log.Println(err)
-		return "", utils.NewError(string(utils.ErrCodeInternal), "Failed to send email.")
+	// if err := as.mailService.SendMail(ctx, mailContent); err != nil {
+	// 	log.Println(err)
+	// 	return "", utils.NewError(string(utils.ErrCodeInternal), "Failed to send email.")
 		
+	// }
+	if err := as.rabbitmqService.Publish(ctx, "auth_email_queue", mailContent); err != nil {
+		return "", utils.NewError(string(utils.ErrCodeInternal), "Failed to send email reset password.")
 	}
-	return resetLink, nil
+
+	return token, nil
 }
 
 func (as *authService)RequestResetPassword(ctx *gin.Context, token, password string) error {

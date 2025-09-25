@@ -6,10 +6,12 @@ import (
 	"github.com/dangLuan01/user-manager/internal/config"
 	"github.com/dangLuan01/user-manager/internal/db"
 	"github.com/dangLuan01/user-manager/internal/routes"
+	"github.com/dangLuan01/user-manager/internal/utils"
 	"github.com/dangLuan01/user-manager/internal/validation"
 	"github.com/dangLuan01/user-manager/pkg/auth"
 	"github.com/dangLuan01/user-manager/pkg/cache"
 	"github.com/dangLuan01/user-manager/pkg/mail"
+	"github.com/dangLuan01/user-manager/pkg/rabbitmq"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -31,16 +33,18 @@ type ModuleContext struct {
 	Redis *redis.Client
 }
 
-func NewApplication(cfg *config.Config) *Application {
+func NewApplication(cfg *config.Config) (*Application, error) {
 
 	if err := validation.InitValidator(); err != nil {
 		log.Fatalf("⛔ Validation init failed %v:", err)
+		return nil, err
 	}
 	
 	r := gin.Default()
 
 	if err := db.InitDB(); err != nil {
 		log.Fatalf("⛔ Unable to connect to sql")
+		return nil, err
 	}
 
 	redisClient := config.NewRedisClient()
@@ -50,12 +54,15 @@ func NewApplication(cfg *config.Config) *Application {
 	factory, err := mail.NewProviderFactory(mail.ProviderMailtrap)
 	if err != nil {
 		log.Fatalf("⛔ Unable to init mail:%s", err)
+		return nil, err
 	}
 
 	mailService, err := mail.NewMailService(cfg, factory)
 	if err != nil {
 		log.Fatalf("⛔ Unable to init mail service:%s", err)
 	}
+
+	rabbitmqService, _ := rabbitmq.NewRabitMQService(utils.GetEnv("RABBITMQ_URL",""))
 
 	ctx := &ModuleContext{
 		DB: db.DB,
@@ -64,7 +71,7 @@ func NewApplication(cfg *config.Config) *Application {
 
 	modules := []Module{
 		NewUserModule(ctx),
-		NewAuthModule(ctx, tokenService, cacheRedisService, mailService),
+		NewAuthModule(ctx, tokenService, cacheRedisService, mailService, rabbitmqService),
 	}
 
 	routes.RegisterRoute(r, tokenService, cacheRedisService ,getModuleRoutes(modules)...)
@@ -73,7 +80,7 @@ func NewApplication(cfg *config.Config) *Application {
 		config: cfg,
 		router: r,
 		modules: modules,
-	}
+	}, nil
 }
 
 func (a *Application) Run() error {
