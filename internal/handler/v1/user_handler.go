@@ -82,7 +82,6 @@ func (uh *UserHandler) UpdateUser(ctx *gin.Context)  {
 
 	var input v1dto.UpdateUserInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-
 		utils.ResponseValidator(ctx, validation.HandlerValidationErrors(err))
 
 		return

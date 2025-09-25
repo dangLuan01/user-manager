@@ -73,12 +73,23 @@ func (ur *SqlUserRepository) Create(user models.User) error {
 }
 
 func (ur *SqlUserRepository) Update(uuid uuid.UUID, user models.User) error {
-	for i, u := range ur.users{
-		if u.UUID == uuid {
-			ur.users[i] = user
-			return nil
-		}
+	// for i, u := range ur.users{
+	// 	if u.UUID == uuid {
+	// 		ur.users[i] = user
+	// 		return nil
+	// 	}
+	// }
+	
+	_, err := ur.db.Update(goqu.T("users")).Set(
+		models.User{
+			Name: user.Name,
+			Email: user.Email,
+		},
+	).Executor().Exec()
+	if err != nil {
+		return err
 	}
+	
 	return fmt.Errorf("user not found")
 }
 

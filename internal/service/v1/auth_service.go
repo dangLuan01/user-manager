@@ -241,8 +241,13 @@ func (as *authService) RequestForgotPassword(ctx *gin.Context, email string) (st
 		To: []mail.Address{
 			{Email: email},
 		},
-		Subject: "Password reset request",
-		Text: fmt.Sprintf("Hi %s, \n\n You requested to reset your password. Click the link below to reset it:\n%s\n\n The link will exprie in a hours", user.Name, resetLink),
+		// Subject: "Password reset request",
+		// Text: fmt.Sprintf("Hi %s, \n\n You requested to reset your password. Click the link below to reset it:\n%s\n\n The link will exprie in a hours", user.Name, resetLink),
+		Template_Uuid: "87473bd7-9b31-47e4-888c-4ebec21d2397",
+		Template_Variables: mail.EmailParams{
+			User_Email: user.Name,
+			Pass_Reset_Link: resetLink,
+		},
 	}
 
 	// if err := as.mailService.SendMail(ctx, mailContent); err != nil {

@@ -12,9 +12,16 @@ import (
 type Email struct {
 	From 		Address 	`json:"from"`
 	To 			[]Address 	`json:"to"`
-	Subject 	string 		`json:"subject"`
-	Text 		string 		`json:"text"`
-	Category 	string 		`json:"category"`
+	Subject 	string 		`json:"subject,omitempty"`
+	Text 		string 		`json:"text,omitempty"`
+	Category 	string 		`json:"category,omitempty"`
+	Template_Uuid string `json:"template_uuid,omitempty"`
+	Template_Variables EmailParams `json:"template_variables,omitempty"`
+}
+
+type EmailParams struct {
+	User_Email string `json:"user_email"`
+	Pass_Reset_Link string `json:"pass_reset_link"`
 }
 
 type Address struct {
