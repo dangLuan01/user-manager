@@ -23,5 +23,7 @@ func (ar *AuthRoutes) Register(r *gin.RouterGroup) {
 		auth.POST("/refresh", ar.handler.RefreshToken)
 		auth.POST("/forgot-password", ar.handler.RequestForgotPassword)
 		auth.POST("/reset-password", ar.handler.RequestResetPassword)
+		auth.POST("/register", ar.handler.Register)
+		auth.POST("/confirm-otp", ar.handler.RegisterOTP)
 	}
 }

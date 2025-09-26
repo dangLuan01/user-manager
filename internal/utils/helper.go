@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"math/big"
 	"os"
 	"strconv"
 )
@@ -37,4 +38,19 @@ func GenerateRandomString(lenght int) (string, error) {
 	}
 
 	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+func GenerateRandomInt(lenght int) (string, error) {
+	digits := "0123456789"
+	number := make([]byte, lenght)
+
+	for i := 0; i < lenght; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(digits))))
+		if err != nil {
+			return "", err
+		}
+		number[i] = digits[num.Int64()]
+	}
+
+	return string(number), nil
 }

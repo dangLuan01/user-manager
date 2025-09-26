@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	v1dto "github.com/dangLuan01/user-manager/internal/dto/v1"
 	"github.com/dangLuan01/user-manager/internal/repository"
 	"github.com/dangLuan01/user-manager/internal/utils"
 	"github.com/dangLuan01/user-manager/pkg/auth"
@@ -299,3 +300,81 @@ func (as *authService)RequestResetPassword(ctx *gin.Context, token, password str
 
 	return nil
 }
+
+func (as *authService) Register(ctx *gin.Context, input v1dto.RegisterInput) error {
+
+	rateLimitKey := fmt.Sprintf("code:ratelimit:%s", input.Email)
+
+	if exists, err := as.cache.Exits(rateLimitKey); exists && err == nil {
+		return utils.NewError(string(utils.ErrCodeTooManyRequest), "Wait before requesting anorther code")
+	}
+
+	email := utils.NormailizeString(input.Email)
+	user, err := as.userRepo.FindByEmail(email)
+	if err != nil || user.Email != "" {
+		return utils.NewError(string(utils.ErrCodeConflict), "Email existsing!")
+	}	
+	
+	code, err := utils.GenerateRandomInt(6)
+	if err != nil {
+		return utils.NewError(string(utils.ErrCodeInternal), "Unable error generate otp.")
+	}
+
+	codeKey := fmt.Sprintf("code:%s", code)
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return utils.NewError(string(utils.ErrCodeInternal), "Unable error hash password.")
+	}
+
+	input.Password = string(hashPassword)
+	if err := as.cache.Set(codeKey, input, 10 * time.Minute); err != nil{
+		return utils.NewError(string(utils.ErrCodeInternal), "Unable error store otp")
+	}
+
+	err = as.cache.Set(rateLimitKey, "1", 2 * time.Minute)
+	if err != nil {
+		return utils.NewError(string(utils.ErrCodeInternal), "Failed to store rate limit code otp")
+	}
+
+	mailContent := &mail.Email{
+		To: []mail.Address{
+			{Email: input.Email},
+		},
+		Template_Uuid: "545b7c8a-cfa2-498b-83f3-8b284e30f318",
+		Template_Variables: mail.EmailParams {
+			User_Email: input.Email,
+			Pass_Reset_Link: code,
+		},
+	}
+
+	if err := as.rabbitmqService.Publish(ctx, "auth_email_queue", mailContent); err != nil {
+		return utils.NewError(string(utils.ErrCodeInternal), "Failed to send email code confirm.")
+	}
+
+	return nil
+}
+
+func (as *authService) RegisterOTP(ctx *gin.Context, code string) error {
+	var user v1dto.RegisterInput
+	codeKey := fmt.Sprintf("code:%s", code)
+	
+	err := as.cache.Get(codeKey, &user)
+	if err != nil || user.Email == "" || user.Password == ""{
+		return utils.NewError(string(utils.ErrCodeInternal), "Code invalid or expried.")
+	}
+
+	uuidUser := uuid.New()
+	userModel := v1dto.RegisterDTOToModel(uuidUser, user)
+	if err := as.userRepo.Create(userModel); err != nil {
+		return utils.WrapError(string(utils.ErrCodeInternal), "Failed to store user.", err)
+	}
+
+	if err := as.cache.Clear(codeKey); err != nil {
+		return utils.NewError(string(utils.ErrCodeInternal), "Unable error clear otp.")
+	}
+
+	return nil
+}
+
+
+

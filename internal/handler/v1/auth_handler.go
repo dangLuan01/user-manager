@@ -112,3 +112,33 @@ func (ah *AuthHandler)RequestResetPassword(ctx *gin.Context) {
 
 	utils.ResponseSuccess(ctx, http.StatusOK, "Password reset successfully!")
 }
+
+func (ah *AuthHandler) Register(ctx *gin.Context) {
+	var input v1dto.RegisterInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		utils.ResponseValidator(ctx, validation.HandlerValidationErrors(err))
+		return
+	}
+
+	if err := ah.authService.Register(ctx, input); err != nil {
+		utils.ResponseError(ctx, err)
+		return
+	}
+
+	utils.ResponseSuccess(ctx, http.StatusOK, "Successfully!")
+}
+
+func (ah *AuthHandler) RegisterOTP(ctx *gin.Context) {
+	var input v1dto.RequestOTPInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		utils.ResponseValidator(ctx, validation.HandlerValidationErrors(err))
+		return
+	}
+
+	if err := ah.authService.RegisterOTP(ctx, input.OTP); err != nil {
+		utils.ResponseError(ctx, err)
+		return
+	}
+
+	utils.ResponseSuccess(ctx, http.StatusOK, "Successfully!")
+}

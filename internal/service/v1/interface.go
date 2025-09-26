@@ -1,6 +1,7 @@
 package v1service
 
 import (
+	v1dto "github.com/dangLuan01/user-manager/internal/dto/v1"
 	"github.com/dangLuan01/user-manager/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -20,4 +21,6 @@ type AuthService interface {
 	RefreshToken(ctx *gin.Context, token string) (string, string, int, error)
 	RequestForgotPassword(ctx *gin.Context, email string) (string, error)
 	RequestResetPassword(ctx *gin.Context, token, password string) error
+	Register(ctx *gin.Context, input v1dto.RegisterInput) error
+	RegisterOTP(ctx *gin.Context, otp string) error
 }
